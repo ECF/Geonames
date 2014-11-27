@@ -2,23 +2,23 @@ package org.geonames.timezone;
 
 import java.util.Date;
 
-public class TimeZone {
+public class Timezone {
 
 	private String countryCode;
 	private String countryName;
 	private double latitude;
 	private double longitude;
 	private String timezoneId;
-	private float dstOffset;
-	private float gmtOffset;
-	private float rawOffset;
+	private double dstOffset;
+	private double gmtOffset;
+	private double rawOffset;
 	private Date time;
 	private Date sunriseTime;
 	private Date sunsetTime;
 	
-	public TimeZone(String countryCode, String countryName, double latitude,
-			double longitude, String timezoneId, float dstOffset,
-			float gmtOffset, float rawOffset, Date time, Date sunriseTime,
+	public Timezone(String countryCode, String countryName, double latitude,
+			double longitude, String timezoneId, double dstOffset,
+			double gmtOffset, double rawOffset, Date time, Date sunriseTime,
 			Date sunsetTime) {
 		super();
 		this.countryCode = countryCode;
@@ -49,13 +49,13 @@ public class TimeZone {
 	public String getTimezoneId() {
 		return timezoneId;
 	}
-	public float getDstOffset() {
+	public double getDstOffset() {
 		return dstOffset;
 	}
-	public float getGmtOffset() {
+	public double getGmtOffset() {
 		return gmtOffset;
 	}
-	public float getRawOffset() {
+	public double getRawOffset() {
 		return rawOffset;
 	}
 	public Date getTime() {
@@ -70,7 +70,7 @@ public class TimeZone {
 
 	@Override
 	public String toString() {
-		return "TimeZone [countryCode=" + countryCode + ", countryName="
+		return "Timezone [countryCode=" + countryCode + ", countryName="
 				+ countryName + ", latitude=" + latitude + ", longitude="
 				+ longitude + ", timezoneId=" + timezoneId + ", dstOffset="
 				+ dstOffset + ", gmtOffset=" + gmtOffset + ", rawOffset="
