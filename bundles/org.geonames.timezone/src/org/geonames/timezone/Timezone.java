@@ -1,7 +1,12 @@
 package org.geonames.timezone;
 
 import java.util.Date;
-
+/**
+ * Class to represent the Timezone information returned from the Geonames timezone
+ * service documented here:  http://www.geonames.org/export/web-services.html#timezone
+ * @author slewis
+ *
+ */
 public class Timezone {
 
 	private String countryCode;
