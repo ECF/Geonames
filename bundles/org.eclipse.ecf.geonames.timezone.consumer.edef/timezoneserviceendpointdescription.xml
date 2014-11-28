@@ -8,6 +8,7 @@
     <property name="endpoint.id" value-type="String" value="87d3ef4f-8e8f-4187-873e-166dcc58c9ea"/>
     <property name="endpoint.package.version.org.geonames.timezone" value-type="String" value="1.0.0"/>
     <property name="endpoint.service.id" value-type="Long" value="0"/>
+    <property name="ecf.exported.async.interfaces" value-type="String" value="*"/>
     <property name="objectClass" value-type="String">
       <array>
         <value>org.geonames.timezone.ITimezoneService</value>
