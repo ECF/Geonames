@@ -4,6 +4,7 @@ import java.net.URI;
 
 import org.eclipse.ecf.core.identity.ID;
 import org.eclipse.ecf.core.identity.IDCreateException;
+import org.eclipse.ecf.core.identity.IDFactory;
 import org.eclipse.ecf.core.identity.Namespace;
 import org.eclipse.ecf.remoteservice.rest.identity.RestID;
 
@@ -36,6 +37,11 @@ public class TimezoneNamespace extends Namespace {
 		}
 	}
 
+	public static TimezoneID createUUID() throws IDCreateException {
+		return (TimezoneID) IDFactory.getDefault().createID(INSTANCE,
+				"uuid:" + java.util.UUID.randomUUID().toString());
+	}
+	
 	@Override
 	public String getScheme() {
 		return "ecf.geonames.timezone";

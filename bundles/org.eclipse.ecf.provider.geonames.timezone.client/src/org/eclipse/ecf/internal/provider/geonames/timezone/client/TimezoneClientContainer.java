@@ -10,20 +10,17 @@ import org.eclipse.ecf.core.ContainerCreateException;
 import org.eclipse.ecf.core.ContainerTypeDescription;
 import org.eclipse.ecf.core.IContainer;
 import org.eclipse.ecf.core.identity.ID;
-import org.eclipse.ecf.core.identity.IDFactory;
 import org.eclipse.ecf.core.identity.Namespace;
 import org.eclipse.ecf.core.security.IConnectContext;
 import org.eclipse.ecf.remoteservice.IRemoteCall;
 import org.eclipse.ecf.remoteservice.IRemoteServiceRegistration;
-import org.eclipse.ecf.remoteservice.client.IRemoteCallParameter;
 import org.eclipse.ecf.remoteservice.client.IRemoteCallable;
 import org.eclipse.ecf.remoteservice.client.IRemoteResponseDeserializer;
-import org.eclipse.ecf.remoteservice.client.RemoteCallParameter;
-import org.eclipse.ecf.remoteservice.client.RemoteCallable;
+import org.eclipse.ecf.remoteservice.client.RemoteCallParametersBuilder;
+import org.eclipse.ecf.remoteservice.client.RemoteCallableBuilder;
 import org.eclipse.ecf.remoteservice.rest.client.HttpGetRequestType;
 import org.eclipse.ecf.remoteservice.rest.client.RestClientContainer;
 import org.eclipse.ecf.remoteservice.rest.client.RestClientContainerInstantiator;
-import org.eclipse.ecf.remoteservice.rest.identity.RestID;
 import org.geonames.timezone.ITimezoneService;
 import org.geonames.timezone.Timezone;
 import org.json.JSONException;
@@ -43,8 +40,7 @@ public class TimezoneClientContainer extends RestClientContainer {
 
 	public TimezoneClientContainer() {
 		// Create a random uuid for this container
-		super((RestID) IDFactory.getDefault().createID(TimezoneNamespace.NAME,
-				"uuid:" + java.util.UUID.randomUUID().toString()));
+		super(TimezoneNamespace.createUUID());
 		// we will use default parameters
 		setAlwaysSendDefaultParameters(true);
 		// Setup response remote response deserializer to parse JSON response
@@ -55,6 +51,8 @@ public class TimezoneClientContainer extends RestClientContainer {
 		// the response
 		// to an instance of appropriate type. In this case the return type
 		// for the ITimezoneService.getTimeZone() is of type Timezone
+		// The JSON returned by the geonames timezone service is specified here
+		// http://www.geonames.org/export/web-services.html#timezone
 		setResponseDeserializer(new IRemoteResponseDeserializer() {
 			@Override
 			public Object deserializeResponse(String endpoint,
@@ -114,20 +112,28 @@ public class TimezoneClientContainer extends RestClientContainer {
 		// service
 		// documentation at
 		// http://www.geonames.org/export/web-services.html#timezone
-		String methodName = "getTimezone";
-		String servicePath = "/timezoneJSON";
-		IRemoteCallParameter[] callParams = new IRemoteCallParameter[] {
-				new RemoteCallParameter("lat"), new RemoteCallParameter("lng"),
-				new RemoteCallParameter("username", USERNAME) };
+		RemoteCallParametersBuilder parameterBuilder = new RemoteCallParametersBuilder();
+		// setup the parameter names as specified by the Geonames Timezone
+		// service documentation at
+		// http://www.geonames.org/export/web-services.html#timezone
+		parameterBuilder.addParameter("lat").addParameter("lng")
+				.addParameter("username", USERNAME);
+		// setup the association between the method name and the
+		// service path as specified by the Geonames Timezone
+		// service documentation
+		RemoteCallableBuilder callableBuilder = new RemoteCallableBuilder(
+				"getTimezone", "/timezoneJSON");
+		// Set default parameters from parameterBuilder
+		callableBuilder.setDefaultParameters(parameterBuilder.build());
+		// Set request type to http get
+		callableBuilder.setRequestType(new HttpGetRequestType());
 		// This registration associated the getTimezone method in the
 		// ITimezoneService proxy
 		// with the get call to the /timezoneJSON service, along with the
 		// callParams
 		// created above
-		tzServiceregistration = registerCallables(
-				new String[] { ITimezoneService.class.getName() },
-				new IRemoteCallable[][] { { new RemoteCallable(methodName,
-						servicePath, callParams, new HttpGetRequestType()) } },
+		tzServiceregistration = registerCallables(ITimezoneService.class,
+				new IRemoteCallable[] { callableBuilder.build() },
 				null);
 	}
 
@@ -145,6 +151,7 @@ public class TimezoneClientContainer extends RestClientContainer {
 		@Override
 		public IContainer createInstance(ContainerTypeDescription description,
 				Object[] parameters) throws ContainerCreateException {
+			// Return new TimezoneClientContainer
 			return new TimezoneClientContainer();
 		}
 
@@ -152,6 +159,9 @@ public class TimezoneClientContainer extends RestClientContainer {
 		public String[] getImportedConfigs(
 				ContainerTypeDescription description,
 				String[] exporterSupportedConfigs) {
+			// If the exporterSupportedConfigs contains NAME, then
+			// return that NAME to trigger RSA usage of this container
+			// instantiator
 			if (Arrays.asList(exporterSupportedConfigs).contains(NAME))
 				return new String[] { NAME };
 			return null;
