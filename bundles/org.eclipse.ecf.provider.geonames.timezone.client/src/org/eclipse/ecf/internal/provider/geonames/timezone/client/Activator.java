@@ -25,14 +25,14 @@ public class Activator implements BundleActivator {
 		// Register an instance of TimezoneNamespace
 		bundleContext.registerService(Namespace.class, new TimezoneNamespace(),
 				null);
-		// Register an instance of TimezoneContainerTypeDescription (see below)
+		// Register an instance of TimezoneContainerTypeDescription (see class below)
 		bundleContext.registerService(ContainerTypeDescription.class,
 				new TimezoneContainerTypeDescription(), null);
 	}
 
 	class TimezoneContainerTypeDescription extends ContainerTypeDescription {
 		public TimezoneContainerTypeDescription() {
-			super(TimezoneClientContainer.NAME,
+			super(TimezoneClientContainer.CONTAINER_TYPE_NAME,
 					new TimezoneClientContainer.Instantiator(),
 					"Timezone Remote Service Container");
 		}

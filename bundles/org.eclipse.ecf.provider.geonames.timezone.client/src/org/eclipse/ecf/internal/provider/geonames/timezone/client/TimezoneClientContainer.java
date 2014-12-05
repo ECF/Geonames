@@ -28,7 +28,7 @@ import org.json.JSONObject;
 
 public class TimezoneClientContainer extends RestClientContainer {
 
-	public static final String NAME = "ecf.container.client.geonames.timezone";
+	public static final String CONTAINER_TYPE_NAME = "ecf.container.client.geonames.timezone";
 
 	private static final SimpleDateFormat dateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd hh:mm");
@@ -36,30 +36,125 @@ public class TimezoneClientContainer extends RestClientContainer {
 			"org.eclipse.ecf.provider.geonames.timezone.client.username",
 			"demo");
 
-	private IRemoteServiceRegistration tzServiceregistration;
+	private IRemoteServiceRegistration tzServiceRegistration;
 
-	public TimezoneClientContainer() {
-		// Create a random uuid for this container
-		super(TimezoneNamespace.createUUID());
-		// we will use default parameters
+	public static class Instantiator extends RestClientContainerInstantiator {
+
+		/**
+		 * 1. This method is called by the ECF RSA implementation when a remote
+		 * service is to be imported. The exporterSupportedConfigs parameter
+		 * contains the exported config types associated with the remote
+		 * service. The implementation of this method decides whether we are
+		 * interested in this remote service config type. If we are
+		 * (exporterSupportedConfigs contains CONTAINER_TYPE_NAME, then we
+		 * return an array of strings containing our CONTAINER_TYPE_NAME
+		 */
+		@Override
+		public String[] getImportedConfigs(
+				ContainerTypeDescription description,
+				String[] exporterSupportedConfigs) {
+			/**
+			 * If the exporterSupportedConfigs contains CONTAINER_TYPE_NAME,
+			 * then return that CONTAINER_TYPE_NAME to trigger RSA usage of this
+			 * container instantiator
+			 */
+			if (Arrays.asList(exporterSupportedConfigs).contains(
+					CONTAINER_TYPE_NAME))
+				return new String[] { CONTAINER_TYPE_NAME };
+			return null;
+		}
+
+		@Override
+		/**
+		 * 2. This method is called by the ECF RSA to create a new instance of
+		 * the appropriate
+		 * container type (aka OSGi config type)
+		 */
+		public IContainer createInstance(ContainerTypeDescription description,
+				Object[] parameters) throws ContainerCreateException {
+			return new TimezoneClientContainer();
+		}
+	}
+
+	/**
+	 * 3. This method is called by the ECF RSA implementation to 'connect' to
+	 * the targetID. targetID (of appropriate type, in this case TimezoneID) is
+	 * created by the RSA implementation and then passed to this method. For the
+	 * geonames service, this targetID has value: http://api.geonames.org/ as
+	 * given in the ecf.endpoint.id remote service property. See the <a href=
+	 * "https://github.com/ECF/Geonames/blob/master/bundles/org.eclipse.ecf.geonames.timezone.consumer.edef/timezoneserviceendpointdescription.xml"
+	 * >example EDEF</a>
+	 */
+	@Override
+	public void connect(ID targetID, IConnectContext connectContext1)
+			throws ContainerConnectException {
+		// Set the connectTargetID in the RestClientContainer super class
+		super.connect(targetID, connectContext1);
+
+		// we will use default parameters (for username see parameters below)
 		setAlwaysSendDefaultParameters(true);
-		// Setup response remote response deserializer to parse JSON response
-		// and return new
-		// Timezone instance. The remote response deserializer is called
-		// automatically
-		// when a http response is received and it's responsible for converting
-		// the response
-		// to an instance of appropriate type. In this case the return type
-		// for the ITimezoneService.getTimeZone() is of type Timezone
-		// The JSON returned by the geonames timezone service is specified here
-		// http://www.geonames.org/export/web-services.html#timezone
+
+		/**
+		 * Setup the association between the ITimezoneService class and the
+		 * Geonames REST remote service. Here is the specification of the <a
+		 * href="http://www.geonames.org/export/web-services.html#timezone">
+		 * Geonames Timezone service</a>.
+		 * <p>
+		 * The association is setup by creating and then registering an instance
+		 * of IRemoteCallable. The IRemoteCallable specifies both the
+		 * association between the automatically constructed ITimezoneService
+		 * proxy's method name. In this case: getTimezone -> /timzoneJSON, as
+		 * well as the association between the ITimezoneService.getTimezone
+		 * proxy's method parameters (i.e. lat and lng in that order) and the
+		 * remote timezone service's required URL parameters (lat, lng, and
+		 * username).
+		 * <p>
+		 * We first define the required parameters using a RemoteCallParameter
+		 * builder
+		 * 
+		 */
+		RemoteCallParameter.Builder parameterBuilder = new RemoteCallParameter.Builder()
+				.addParameter("lat").addParameter("lng")
+				.addParameter("username", USERNAME);
+		/**
+		 * Then we create a callableBuilder instance to associate the
+		 * getTimezone method to the path for this service. We also set the
+		 * default parameters to the ones we've specified via the
+		 * parameterBuilder above, and we define the http request type as 'GET'.
+		 */
+		RemoteCallable.Builder callableBuilder = new RemoteCallable.Builder(
+				"getTimezone", "/timezoneJSON").setDefaultParameters(
+				parameterBuilder.build()).setRequestType(
+				new HttpGetRequestType());
+		/**
+		 * Now we register the remote callable. This associates the
+		 * ITimezoneService proxy with a correct dynamically constructed URL.
+		 * When RSA requests the remote service proxy from this container, the
+		 * proxy will have all the necessary code to construct the appropriate
+		 * URL and make the appropriate REST request.
+		 */
+		tzServiceRegistration = registerCallables(ITimezoneService.class,
+				new IRemoteCallable[] { callableBuilder.build() }, null);
+
+		/**
+		 * In order for the proxy to handle the response from the Geonames
+		 * Timezone service, it's necessary to define a response deserializer to
+		 * convert the data from the JSON response (or failure/exception
+		 * information) to an instance of Timezone for the proxy to return to
+		 * the remote service consumer. This is done by defining an
+		 * IRemoteResponseDeserializer. When the http response is received, it
+		 * is passed to the remote response deserializer to convert from the
+		 * response JSON to a Timezone instance that will be returned by the
+		 * proxy.
+		 * 
+		 */
 		setResponseDeserializer(new IRemoteResponseDeserializer() {
 			@Override
 			public Object deserializeResponse(String endpoint,
 					IRemoteCall call, IRemoteCallable callable,
 					@SuppressWarnings("rawtypes") Map responseHeaders,
 					byte[] responseBody) throws NotSerializableException {
-				// Convert responseBody to String and parse using JSON lib
+				// Convert responseBody to String and parse using org.json lib
 				try {
 					JSONObject jo = new JSONObject(new String(responseBody));
 					// Check status for failure. Throws exception if
@@ -69,7 +164,8 @@ public class TimezoneClientContainer extends RestClientContainer {
 						throw new JSONException(status.getString("message")
 								+ ";code=" + status.getInt("value"));
 					}
-					// Get the field
+					// No exception, so get each of the fields from the
+					// json object
 					String countryCode = jo.getString("countryCode");
 					String countryName = jo.getString("countryName");
 					double lat = jo.getDouble("lat");
@@ -81,12 +177,16 @@ public class TimezoneClientContainer extends RestClientContainer {
 					String time = jo.getString("time");
 					String sunrise = jo.getString("sunrise");
 					String sunset = jo.getString("sunset");
-
+					// Now create and return Timezone instance with all the
+					// appropriate
+					// values of the fields
 					return new Timezone(countryCode, countryName, lat, lng,
 							timezoneId, dstOffset, gmtOffset, rawOffset,
 							dateFormat.parse(time), dateFormat.parse(sunrise),
 							dateFormat.parse(sunset));
-
+					// If some json parsing exception (badly formatted json and
+					// so on,
+					// throw an appropriate exception
 				} catch (Exception e) {
 					NotSerializableException ex = new NotSerializableException(
 							"Problem in response from timezone service endpoint="
@@ -100,71 +200,25 @@ public class TimezoneClientContainer extends RestClientContainer {
 	}
 
 	@Override
+	public void disconnect() {
+		super.disconnect();
+		// Unregister the tzServiceRegistration upon 'disconnect'
+		if (tzServiceRegistration != null) {
+			tzServiceRegistration.unregister();
+			tzServiceRegistration = null;
+		}
+	}
+
+	TimezoneClientContainer() {
+		// Set this container's ID to a ranmdom UUID
+		super(TimezoneNamespace.createUUID());
+	}
+
+	@Override
 	public Namespace getConnectNamespace() {
+		// The required Namespace for this container
+		// is the TimezoneNamespace
 		return TimezoneNamespace.INSTANCE;
 	}
 
-	@Override
-	public void connect(ID targetID, IConnectContext connectContext1)
-			throws ContainerConnectException {
-		super.connect(targetID, connectContext1);
-		// The parameter names and path specified by the Geonames Timezone
-		// service
-		// documentation at
-		// http://www.geonames.org/export/web-services.html#timezone
-		RemoteCallParameter.Builder parameterBuilder = new RemoteCallParameter.Builder();
-		// setup the parameter names as specified by the Geonames Timezone
-		// service documentation at
-		// http://www.geonames.org/export/web-services.html#timezone
-		parameterBuilder.addParameter("lat").addParameter("lng")
-				.addParameter("username", USERNAME);
-		// setup the association between the method name and the
-		// service path as specified by the Geonames Timezone
-		// service documentation
-		RemoteCallable.Builder callableBuilder = new RemoteCallable.Builder(
-				"getTimezone", "/timezoneJSON");
-		// Set default parameters from parameterBuilder
-		callableBuilder.setDefaultParameters(parameterBuilder.build());
-		// Set request type to http get
-		callableBuilder.setRequestType(new HttpGetRequestType());
-		// This registration associated the getTimezone method in the
-		// ITimezoneService proxy
-		// with the get call to the /timezoneJSON service, along with the
-		// callParams
-		// created above
-		tzServiceregistration = registerCallables(ITimezoneService.class,
-				new IRemoteCallable[] { callableBuilder.build() },
-				null);
-	}
-
-	@Override
-	public void disconnect() {
-		super.disconnect();
-		if (tzServiceregistration != null) {
-			tzServiceregistration.unregister();
-			tzServiceregistration = null;
-		}
-	}
-
-	public static class Instantiator extends RestClientContainerInstantiator {
-
-		@Override
-		public IContainer createInstance(ContainerTypeDescription description,
-				Object[] parameters) throws ContainerCreateException {
-			// Return new TimezoneClientContainer
-			return new TimezoneClientContainer();
-		}
-
-		@Override
-		public String[] getImportedConfigs(
-				ContainerTypeDescription description,
-				String[] exporterSupportedConfigs) {
-			// If the exporterSupportedConfigs contains NAME, then
-			// return that NAME to trigger RSA usage of this container
-			// instantiator
-			if (Arrays.asList(exporterSupportedConfigs).contains(NAME))
-				return new String[] { NAME };
-			return null;
-		}
-	}
 }
