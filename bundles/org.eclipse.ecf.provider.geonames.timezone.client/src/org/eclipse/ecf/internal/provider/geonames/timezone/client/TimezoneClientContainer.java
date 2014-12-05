@@ -16,8 +16,8 @@ import org.eclipse.ecf.remoteservice.IRemoteCall;
 import org.eclipse.ecf.remoteservice.IRemoteServiceRegistration;
 import org.eclipse.ecf.remoteservice.client.IRemoteCallable;
 import org.eclipse.ecf.remoteservice.client.IRemoteResponseDeserializer;
-import org.eclipse.ecf.remoteservice.client.RemoteCallParametersBuilder;
-import org.eclipse.ecf.remoteservice.client.RemoteCallableBuilder;
+import org.eclipse.ecf.remoteservice.client.RemoteCallParameter;
+import org.eclipse.ecf.remoteservice.client.RemoteCallable;
 import org.eclipse.ecf.remoteservice.rest.client.HttpGetRequestType;
 import org.eclipse.ecf.remoteservice.rest.client.RestClientContainer;
 import org.eclipse.ecf.remoteservice.rest.client.RestClientContainerInstantiator;
@@ -112,7 +112,7 @@ public class TimezoneClientContainer extends RestClientContainer {
 		// service
 		// documentation at
 		// http://www.geonames.org/export/web-services.html#timezone
-		RemoteCallParametersBuilder parameterBuilder = new RemoteCallParametersBuilder();
+		RemoteCallParameter.Builder parameterBuilder = new RemoteCallParameter.Builder();
 		// setup the parameter names as specified by the Geonames Timezone
 		// service documentation at
 		// http://www.geonames.org/export/web-services.html#timezone
@@ -121,7 +121,7 @@ public class TimezoneClientContainer extends RestClientContainer {
 		// setup the association between the method name and the
 		// service path as specified by the Geonames Timezone
 		// service documentation
-		RemoteCallableBuilder callableBuilder = new RemoteCallableBuilder(
+		RemoteCallable.Builder callableBuilder = new RemoteCallable.Builder(
 				"getTimezone", "/timezoneJSON");
 		// Set default parameters from parameterBuilder
 		callableBuilder.setDefaultParameters(parameterBuilder.build());
