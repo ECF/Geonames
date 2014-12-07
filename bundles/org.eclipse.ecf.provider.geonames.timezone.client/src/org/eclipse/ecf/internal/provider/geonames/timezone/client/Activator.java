@@ -35,7 +35,7 @@ public class Activator implements BundleActivator {
 		public TimezoneContainerTypeDescription() {
 			super(TimezoneClientContainer.CONTAINER_TYPE_NAME,
 					new TimezoneClientContainer.Instantiator(),
-					"Timezone Remote Service Container");
+					"Geonames Timezone Remote Service Client Container");
 		}
 	}
 
