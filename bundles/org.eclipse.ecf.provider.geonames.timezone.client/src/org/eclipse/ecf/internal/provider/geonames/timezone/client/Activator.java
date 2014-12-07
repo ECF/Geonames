@@ -25,7 +25,8 @@ public class Activator implements BundleActivator {
 		// Register an instance of TimezoneNamespace
 		bundleContext.registerService(Namespace.class, new TimezoneNamespace(),
 				null);
-		// Register an instance of TimezoneContainerTypeDescription (see class below)
+		// Register an instance of TimezoneContainerTypeDescription (see class
+		// below)
 		bundleContext.registerService(ContainerTypeDescription.class,
 				new TimezoneContainerTypeDescription(), null);
 	}

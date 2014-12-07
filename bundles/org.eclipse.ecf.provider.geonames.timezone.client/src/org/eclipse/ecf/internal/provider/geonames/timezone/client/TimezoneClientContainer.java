@@ -154,8 +154,9 @@ public class TimezoneClientContainer extends RestClientContainer {
 					IRemoteCall call, IRemoteCallable callable,
 					@SuppressWarnings("rawtypes") Map responseHeaders,
 					byte[] responseBody) throws NotSerializableException {
-				// Convert responseBody to String and parse using org.json lib
 				try {
+					// Convert responseBody to String and parse using org.json
+					// lib
 					JSONObject jo = new JSONObject(new String(responseBody));
 					// Check status for failure. Throws exception if
 					// error status

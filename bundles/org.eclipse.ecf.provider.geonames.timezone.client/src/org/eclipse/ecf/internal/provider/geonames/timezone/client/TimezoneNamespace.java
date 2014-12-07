@@ -15,17 +15,17 @@ public class TimezoneNamespace extends Namespace {
 
 	private static final long serialVersionUID = -428290464908414596L;
 
+	public TimezoneNamespace() {
+		super(NAME, "Geonames Timezone Namespace");
+		INSTANCE = this;
+	}
+
 	public class TimezoneID extends RestID {
 		private static final long serialVersionUID = 7975775175834482062L;
 
 		TimezoneID(URI uri) {
 			super(TimezoneNamespace.this, uri);
 		}
-	}
-
-	public TimezoneNamespace() {
-		super(NAME, "Geonames Timezone Namespace");
-		INSTANCE = this;
 	}
 
 	@Override
@@ -41,7 +41,7 @@ public class TimezoneNamespace extends Namespace {
 		return (TimezoneID) IDFactory.getDefault().createID(INSTANCE,
 				"uuid:" + java.util.UUID.randomUUID().toString());
 	}
-	
+
 	@Override
 	public String getScheme() {
 		return "ecf.geonames.timezone";
